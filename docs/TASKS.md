@@ -255,12 +255,12 @@ trader-desktop/
 
 #### Milestone B: 코어 엔진 (Week 2)
 
-- **B-1 [TODO] 마켓 캘린더 (engine/market_calendar.py)**
+- **B-1 [DONE] 마켓 캘린더 (engine/market_calendar.py)**
   - 수행: exchange_calendars 래핑, KRX 세션/휴일 우선, US+DST 추가
   - 수용기준: KRX 거래시간 (09:00-15:30 KST) + DST 전환일 정확
   - 검증: `pytest tests/test_market_calendar.py`
 
-- **B-2 [TODO] 포트폴리오 모듈 (engine/portfolio.py)**
+- **B-2 [DONE] 포트폴리오 모듈 (engine/portfolio.py)**
   - 수행: 포지션 추적 (인-메모리), PnL(수수료 반영), 일일 리셋(마켓 캘린더 기준)
   - 수용기준: 매수→매도 PnL 정확 계산
   - 검증: `pytest tests/test_portfolio.py`
