@@ -237,7 +237,7 @@ trader-desktop/
   - 수용기준: 모든 모델 직렬화/역직렬화 테스트 통과
   - 검증: `pytest tests/test_schemas.py`
 
-- **A-3 [TODO] 설정 시스템 (config/)**
+- **A-3 [DONE] 설정 시스템 (config/)**
   - 수행: risk_policy.yaml, strategy.yaml, app.yaml, **litellm_config.yaml** + Pydantic BaseSettings 검증
   - 수용기준: 잘못된 config → ValidationError
   - 검증: `pytest tests/test_config.py`

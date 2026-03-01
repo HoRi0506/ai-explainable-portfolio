@@ -2597,6 +2597,7 @@ dependencies = [
     { name = "litellm" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
     { name = "tenacity" },
     { name = "yfinance" },
 ]
@@ -2620,6 +2621,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.30" },
     { name = "tenacity", specifier = ">=8.0" },
     { name = "yfinance", specifier = ">=0.2" },
