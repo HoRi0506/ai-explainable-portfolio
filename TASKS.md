@@ -248,7 +248,7 @@ trader-desktop/
   - 검증: `pytest tests/test_logger.py`
   - ⚠️ **Phase 1b에서 강화**: HMAC 키 서명(keychain) + 해시 체인 + 시퀀스 번호 → `pytest tests/test_logger_integrity.py`
 
-- **A-5 [TODO] 시크릿 관리**
+- **A-5 [DONE] 시크릿 관리**
   - 수행: keyring OS 키체인 + .env 폴백 (파일 권한 600 강제, prod 모드에서 .env 금지) + 로그 레닥션 + 알림 채널 레닥션
   - 수용기준: `grep -r "sk-" logs.jsonl` 결과 0건, .env 파일 권한 600
   - 검증: `pytest tests/test_secret_redaction.py`
