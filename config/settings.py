@@ -68,6 +68,8 @@ class MAStrategy(BaseModel):
     short_window: int = Field(default=5, ge=1)
     long_window: int = Field(default=20, ge=2)
     min_confidence: float = Field(default=0.6, ge=0.0, le=1.0)
+    tp_pct: float = Field(default=0.03, gt=0.0, le=0.5)
+    sl_pct: float = Field(default=0.02, gt=0.0, le=0.5)
 
 
 class StrategyConfig(BaseModel):

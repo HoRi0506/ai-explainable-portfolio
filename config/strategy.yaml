@@ -4,5 +4,7 @@ strategies:
     short_window: 5
     long_window: 20
     min_confidence: 0.6
+    tp_pct: 0.03
+    sl_pct: 0.02
 
 active_strategy: ma_crossover
