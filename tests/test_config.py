@@ -439,7 +439,7 @@ class TestLoadSettings:
         assert settings.app.venue == Venue.KR
         assert settings.risk.active_profile == "defensive"
         assert settings.strategy.active_strategy == "ma_crossover"
-        assert settings.litellm.default_tier == "smart"
+        assert settings.litellm.default_tier == "smart_a"
 
     def test_load_settings_from_temp_dir(self, tmp_path):
         """임시 디렉토리에서 로드."""
@@ -610,24 +610,34 @@ class TestLiteLLMValues:
         assert quick.timeout_sec == 30
         assert quick.max_retries == 2
 
-    def test_litellm_smart_tier(self):
-        """smart 티어 검증."""
+    def test_litellm_smart_a_tier(self):
+        """smart_a 티어 검증."""
         settings = load_settings("config")
-        smart = settings.litellm.tiers["smart"]
-        assert smart.model == "openai/gpt-4o"
-        assert "trade_analysis" in smart.purposes
-        assert "decision_making" in smart.purposes
-        assert smart.timeout_sec == 30
-        assert smart.max_retries == 2
+        smart_a = settings.litellm.tiers["smart_a"]
+        assert smart_a.model == "anthropic/claude-haiku-4-5-20250514"
+        assert "trade_analysis" in smart_a.purposes
+        assert "data_synthesis" in smart_a.purposes
+        assert smart_a.timeout_sec == 30
+        assert smart_a.max_retries == 2
+
+    def test_litellm_smart_b_tier(self):
+        """smart_b 티어 검증."""
+        settings = load_settings("config")
+        smart_b = settings.litellm.tiers["smart_b"]
+        assert smart_b.model == "openai/gpt-5.2"
+        assert "trade_analysis_verification" in smart_b.purposes
+        assert "cross_check" in smart_b.purposes
+        assert smart_b.timeout_sec == 30
+        assert smart_b.max_retries == 2
 
     def test_litellm_expert_tier(self):
         """expert 티어 검증."""
         settings = load_settings("config")
         expert = settings.litellm.tiers["expert"]
-        assert expert.model == "anthropic/claude-sonnet-4-20250514"
-        assert "edge_cases" in expert.purposes
+        assert expert.model == "anthropic/claude-opus-4-5-20250514"
+        assert "buy_sell_decision" in expert.purposes
         assert "high_uncertainty" in expert.purposes
-        assert expert.timeout_sec == 30
+        assert expert.timeout_sec == 60
         assert expert.max_retries == 2
 
     def test_litellm_routing(self):
@@ -635,6 +645,6 @@ class TestLiteLLMValues:
         settings = load_settings("config")
         assert settings.litellm.routing["data_collection"] == "quick"
         assert settings.litellm.routing["monitoring_text"] == "quick"
-        assert settings.litellm.routing["trade_analysis"] == "smart"
-        assert settings.litellm.routing["decision_making"] == "smart"
-        assert settings.litellm.routing["edge_cases"] == "expert"
+        assert settings.litellm.routing["trade_analysis"] == "smart_a"
+        assert settings.litellm.routing["trade_analysis_verification"] == "smart_b"
+        assert settings.litellm.routing["buy_sell_decision"] == "expert"
