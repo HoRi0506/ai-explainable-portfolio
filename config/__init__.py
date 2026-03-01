@@ -16,6 +16,7 @@ from config.settings import (
     load_settings,
     load_yaml,
 )
+from config.secrets import SecretManager, redact_secrets
 
 __all__ = [
     "AppConfig",
@@ -23,9 +24,11 @@ __all__ = [
     "LLMTier",
     "MAStrategy",
     "RiskPolicyConfig",
+    "SecretManager",
     "Settings",
     "StrategyConfig",
     "TimeWindow",
     "load_settings",
     "load_yaml",
+    "redact_secrets",
 ]
