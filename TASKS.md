@@ -242,7 +242,7 @@ trader-desktop/
   - 수용기준: 잘못된 config → ValidationError
   - 검증: `pytest tests/test_config.py`
 
-- **A-4 [TODO] 감사 로깅 시스템 — Phase 1a (engine/logger.py)**
+- **A-4 [DONE] 감사 로깅 시스템 — Phase 1a (engine/logger.py)**
   - 수행: Append-only JSONL + fsync + 일일 체크섬 (Phase 1a 버전, 해시 체인 미포함)
   - 수용기준: 로그 정상 기록 및 체크섬 검증 가능
   - 검증: `pytest tests/test_logger.py`
