@@ -1,1 +1,40 @@
-# 리스크 프로필 3종 (보수적/방어적/공격적)
+# 리스크 프로필 3종 (AGENTS.md §1)
+profiles:
+  conservative:
+    profile_name: conservative
+    max_position_pct: 3.0
+    max_positions: 3
+    max_drawdown_pct: 5.0
+    daily_loss_limit_pct: 1.0
+    max_daily_orders: 3
+    market_open_delay_minutes: 60
+    data_collection_start: "08:30"
+    data_collection_end: "15:00"
+    trading_start: "10:00"
+    trading_end: "15:00"
+  defensive:
+    profile_name: defensive
+    max_position_pct: 5.0
+    max_positions: 5
+    max_drawdown_pct: 7.0
+    daily_loss_limit_pct: 1.5
+    max_daily_orders: 5
+    market_open_delay_minutes: 60
+    data_collection_start: "08:30"
+    data_collection_end: "15:00"
+    trading_start: "10:00"
+    trading_end: "15:00"
+  aggressive:
+    profile_name: aggressive
+    max_position_pct: 10.0
+    max_positions: 8
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: 2.0
+    max_daily_orders: 10
+    market_open_delay_minutes: 60
+    data_collection_start: "08:30"
+    data_collection_end: "15:00"
+    trading_start: "10:00"
+    trading_end: "15:00"
+
+active_profile: defensive

@@ -1,1 +1,21 @@
-# 앱 설정
+# 앱 기본 설정
+trading_mode: PAUSED  # PAUSED | PAPER | REAL — 시작 시 항상 PAUSED (crash-safe)
+venue: KR  # KR | US
+timezone: Asia/Seoul
+
+# 운영 시간 (KST 기준)
+trade_window:
+  start: "10:00"
+  end: "15:00"
+data_collection_window:
+  start: "08:30"
+  end: "15:00"
+max_collections_per_day: 2  # 하루 최대 데이터 수집 횟수
+
+# 저장소
+db_path: storage/orders.db
+log_path: storage/logs.jsonl
+
+# 파이프라인
+pipeline_timeout_sec: 60
+data_stale_minutes: 30  # 이 시간 이상 지난 데이터 → 거부

@@ -1,1 +1,8 @@
-# 전략 파라미터
+# 전략 파라미터 (Phase 1a: 기본 MA 크로스오버)
+strategies:
+  ma_crossover:
+    short_window: 5
+    long_window: 20
+    min_confidence: 0.6
+
+active_strategy: ma_crossover
