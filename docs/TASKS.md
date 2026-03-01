@@ -287,7 +287,7 @@ trader-desktop/
   - 검증: `pytest tests/test_risk_gate.py` (20+ 케이스)
   - ⚠️ **Phase 1b에서 강화**: HMAC capability_token (ApprovedOrderPlan 정준 해시 바인딩, trace_id+order+sizing+만료+nonce), 1회 사용 후 무효화
 
-- **B-4 [TODO] Execution OMS — Phase 1a (engine/execution_oms.py) — CRITICAL**
+- **B-4 [DONE] Execution OMS — Phase 1a (engine/execution_oms.py) — CRITICAL**
   - 수행: 상태 머신(NEW→SUBMITTED→PARTIAL→FILLED|CANCELED|REJECTED), 주문 전송 + 로그, SQLite WAL 모드 영속화
   - 수용기준: 재시작 후 상태 복원
   - 검증: `pytest tests/test_oms.py`
