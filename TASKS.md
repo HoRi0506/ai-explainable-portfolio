@@ -232,7 +232,7 @@ trader-desktop/
   - 수용기준: `tree` 출력이 §3 구조와 일치
   - 검증: `python -c "from tools import yfinance_client"` 성공
 
-- **A-2 [TODO] Pydantic 스키마 정의 (schemas/models.py)**
+- **A-2 [DONE] Pydantic 스키마 정의 (schemas/models.py)**
   - 수행: 6개 모델 정의 (§6), capability_token HMAC 필드, idempotency_key 포함
   - 수용기준: 모든 모델 직렬화/역직렬화 테스트 통과
   - 검증: `pytest tests/test_schemas.py`
