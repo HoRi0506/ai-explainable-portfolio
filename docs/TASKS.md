@@ -293,7 +293,7 @@ trader-desktop/
   - 검증: `pytest tests/test_oms.py`
   - ⚠️ **Phase 1b에서 강화**: 멱등성 키, HMAC token 검증+해시 매칭, 글로벌 backoff + circuit breaker
 
-- **B-7 [TODO] Strategy Hub (engine/strategy_hub.py)**
+- **B-7 [DONE] Strategy Hub (engine/strategy_hub.py)**
   - 수행: 전략 인터페이스, 기본 이동평균 크로스오버 (LLM 불필요), LLM 전략 연결
   - 수용기준: 더미 데이터로 TradeIdea 생성
   - 검증: `pytest tests/test_strategy_hub.py`
