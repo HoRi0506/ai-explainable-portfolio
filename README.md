@@ -8,24 +8,26 @@
 - **안전 우선**: Kill Switch 3단계, crash-safe 기본값(재시작 시 자동매매 OFF)
 - **점진적 전환**: 백테스트 → 페이퍼(4주+) → shadow → 소액 실거래
 - **LLM 장애 대응**: LLM 불가 시 HOLD (신규 진입 금지)
-- **비용 효율**: 데이터 수집은 저비용 모델(Gemini Flash, 하루 2회), 의사결정만 고비용 모델 사용
+- **비용 효율**: 데이터 수집은 저비용 모델(Gemini Flash, 하루 2회), 의사결정은 2개 모델 교차 검증(Haiku+GPT 5.2) + Opus 최종 결정
+- **교차 검증**: 2개 모델(Haiku+GPT 5.2) 독립 분석 후 비교. 불일치 시 Opus가 최종 결정
 - **OAuth 통합**: LiteLLM Proxy로 에이전트별 인증/예산/모델 접근 제어
 
 ## 아키텍처
 
 ```
-[Scheduler] → [Data Hub (Gemini Flash)] → [Analyst Agent (GPT-4o/Sonnet)] → [Risk Gate] → [OMS] → [Broker]
-                      ↓                                                                              ↑
-                  [DB 저장]                                                                           │
-                                                                                                      │
-[Monitor Agent (규칙 기반)] ← [Portfolio] ← [Reconciliation] ← ──────────────────────────────────────┘
-                      ↓
-              [LiteLLM Proxy (OAuth)]
+[Scheduler] → [Data Hub (QUICK: Gemini Flash)] → [Analyst Agent]
+                      ↓                              ├─ SMART-A (Haiku): 분석
+                  [DB 저장]                           ├─ SMART-B (GPT 5.2): 교차 검증
+                                                      └─ EXPERT (Opus): 최종 결정 (필요 시)
+                                                              ↓
+                                                   [Risk Gate] → [OMS] → [Broker]
+                                                                            ↑
+[Monitor Agent (규칙 기반)] ← [Portfolio] ← [Reconciliation] ← ──────────────────────┘
 ```
 
 | 구성요소 | 역할 |
 |---------|------|
-| Analyst Agent | 시장 데이터 분석, 매매 아이디어(TradeIdea) 생성 |
+| Analyst Agent | 시장 데이터 분석, 교차 검증(Haiku+GPT 5.2), 매수/매도 결정(Opus) |
 | Monitor Agent | 포지션 감시, 이상 감지, 자동 정지 |
 | Risk Gate | 규칙 기반 리스크 필터 (AI 아님) |
 | OMS | 주문 실행 + 상태 추적 (멱등성 보장) |
@@ -35,7 +37,7 @@
 | 구분 | 선택 |
 |------|------|
 | 언어 | Python 3.11+ |
-| LLM (의사결정) | GPT-4o / Claude Sonnet (via LiteLLM) |
+| LLM (의사결정) | Claude Opus 4.5 (최종 결정) + Claude Haiku 4.5 + GPT 5.2 (교차 검증) (via LiteLLM) |
 | LLM (데이터 수집) | Gemini 2.5/3.0 Flash (via LiteLLM) |
 | LLM Gateway | LiteLLM Proxy (OAuth, Virtual Keys, 예산 제한) |
 | 브로커 (KR) | KIS 한국투자증권 (Phase 1) |

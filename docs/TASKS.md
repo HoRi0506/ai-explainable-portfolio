@@ -169,44 +169,60 @@ trader-desktop/
 
 ### 운영 시간 (KST 기준)
 
-| 활동 | 시간 | 빈도 | 사용 모델 |
-|------|------|------|----------|
-| 데이터 수집 (뉴스, 시장 데이터) | 08:30 ~ 15:00 | 하루 최대 2회 (장전 + 장중) | Gemini Flash |
-| 매매 분석 & 주문 | 10:00 ~ 15:00 | 수집 데이터 기반 | GPT-4o / Claude Sonnet |
-| 포지션 모니터링 | 보유 중 수시 | 규칙 기반 (LLM 불필요) | — |
-| 이상 감지 텍스트 생성 | 이상 발생 시 | 선택적 | Gemini Flash |
+| 활동 | 시간 | 빈도 | 사용 모델 | CLI 도구 |
+|------|------|------|----------|----------|
+| 데이터 수집 (뉴스, 시장 데이터) | 08:30 ~ 15:00 | 하루 최대 2회 (장전 + 장중) | Gemini 2.5/3.0 Flash | Antigravity |
+| 분석 A (요약/차트/정리) | 10:00 ~ 15:00 | 수집 데이터 기반 | Claude Haiku 4.5 | Claude Code |
+| 분석 B (교차 검증) | 10:00 ~ 15:00 | 분석 A와 병렬 | GPT 5.2 | Codex CLI |
+| 매수/매도 최종 결정 | 10:00 ~ 15:00 | 교차 검증 불일치 시 | Claude Opus 4.5 | Antigravity |
+| 포지션 모니터링 | 보유 중 수시 | 규칙 기반 (LLM 불필요) | — | — |
+| 이상 감지 텍스트 생성 | 이상 발생 시 | 선택적 | Gemini Flash | Antigravity |
 
-### 데이터 수집 → 저장 → 재활용 흐름
+### 데이터 수집 → 교차 검증 → 결정 흐름
 
 ```
-08:30  [Gemini Flash] 뉴스 + 시장 데이터 수집 → DB 저장 (1회차)
-       ↓
-10:00  [고비용 모델] 저장된 데이터 기반 분석 → 매매 판단
-       ↓
-~12:00 [Gemini Flash] 장중 데이터 갱신 (2회차, 선택) → DB 업데이트
-       ↓
-10:00~15:00  매매 실행 (분석 결과 기반)
-15:00  매매 종료
+[이벤트 드리븐 — 매매는 허용 시간 내 수시 실행]
+
+[Scheduler] 데이터 수집 트리거 (08:30~15:00, 하루 최대 2회)
+    ↓
+[QUICK: Gemini Flash] 뉴스 + 시장 데이터 수집 → DB 저장
+    ↓ (수집 완료 이벤트)
+[SMART-A: Haiku] + [SMART-B: GPT 5.2] 병렬 독립 분석
+    ↓
+교차 검증: 일치 → TradeIdea 확정 / 불일치 → [EXPERT: Opus] 최종 판단
+    ↓ (TradeIdea 생성 시 즉시)
+[Risk Gate → OMS → 브로커] 매매 실행 (10:00~15:00 내 수시)
+
+[Monitor Agent] 보유 중 수시 감시 → 조건 충족 시 즉시 SELL 트리거
 ```
 
-### 계층형 모델 라우팅 (3-Tier)
+### 계층형 모델 라우팅 (3-Tier + 교차 검증)
 
-| Tier | 모델 | 용도 | 예상 비용 |
-|------|------|------|----------|
-| QUICK | Gemini 2.5/3.0 Flash | 데이터 수집, 정규화, 분류, 모니터링 텍스트 | $0.10~0.40/1M tokens |
-| SMART | GPT-4o / Claude Sonnet | 매매 아이디어 생성, 심층 분석 | $2.50~3.00/1M tokens |
-| EXPERT | Claude Opus (선택) | 경계선 케이스, 고불확실성 판단 | $15.00/1M tokens |
+| Tier | 모델 | CLI 도구 | 용도 | 예상 비용 |
+|------|------|----------|------|----------|
+| QUICK | Gemini 2.5/3.0 Flash | Antigravity | 데이터 수집, 정규화, 분류, 모니터링 텍스트 | $0.10~0.40/1M tokens |
+| SMART-A | Claude Haiku 4.5 | Claude Code | 분석 요약, 차트/패턴 인식, 데이터 정리 | $0.25~1.00/1M tokens |
+| SMART-B | GPT 5.2 | Codex CLI | 독립 분석, 교차 검증, 패턴 검증 | $2.00~3.00/1M tokens |
+| EXPERT | Claude Opus 4.5 | Antigravity | **매수/매도 최종 결정**, 불일치 해소, 고불확실성 | $15.00/1M tokens |
 
-- Phase 1: Static Routing (config에서 에이전트별 모델 고정)
-- Phase 2+: Cascade Pattern (QUICK → 불확실 시 SMART → EXPERT)
+- Phase 1: Static Routing (config에서 에이전트별 모델 고정 + 교차 검증 로직)
+- Phase 2+: Cascade Pattern (SMART 교차 검증 → 불일치 시 자동 EXPERT 에스컬레이션)
+
+### CLI 도구별 역할
+
+| CLI 도구 | 제공 모델 | 역할 |
+|----------|----------|------|
+| **Antigravity** (Gemini CLI) | Gemini Flash, Claude Opus | 데이터 수집(QUICK) + 최종 결정(EXPERT) |
+| **Claude Code** | Claude Haiku | 분석/정리(SMART-A). 폴백 역할 |
+| **Codex CLI** | GPT 5.2 | 교차 검증(SMART-B) |
 
 ### LiteLLM Proxy 구성
 
 - 에이전트별 Virtual Key 발급 (예산/모델 접근 제한)
-- Analyst Agent: SMART + EXPERT 모델 접근, 일일 $5 한도
+- Analyst Agent: SMART-A + SMART-B + EXPERT 모델 접근, 일일 $5 한도
 - Monitor Agent: QUICK 모델만, 일일 $0.50 한도
-- 전체 fallback chain: EXPERT → SMART → QUICK
-
+- 교차 검증 불일치 + EXPERT 판단 불가 → HOLD (안전 기본값)
+- 폴백 체인: EXPERT → SMART-A → QUICK (의사결정은 절대 QUICK으로 폴백 안 함)
 ---
 
 ## 6. JSON 스키마 (Pydantic 모델)
@@ -265,7 +281,7 @@ trader-desktop/
   - 수용기준: 매수→매도 PnL 정확 계산
   - 검증: `pytest tests/test_portfolio.py`
 
-- **B-3 [TODO] Risk Gate — Phase 1a (engine/risk_gate.py) — CRITICAL**
+- **B-3 [DONE] Risk Gate — Phase 1a (engine/risk_gate.py) — CRITICAL**
   - 수행: config flag 기반 TradingMode enum (PAUSED/PAPER/REAL) + 3 하드 규칙 (일일 손실, MDD, 집중도), 데이터 신선도, 주문 건수, 마켓 시간
   - 수용기준: PAUSED 모드에서 모든 주문 차단, 하드 규칙 위반 시 거부
   - 검증: `pytest tests/test_risk_gate.py` (20+ 케이스)

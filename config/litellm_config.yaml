@@ -1,35 +1,70 @@
-# LiteLLM 모델 라우팅 (3-Tier)
+# LiteLLM 모델 라우팅 (3-Tier + 교차 검증)
 # Phase 1a: 직접 API 호출. Phase 2+: LiteLLM Proxy 전환 예정
+#
+# 아키텍처:
+#   QUICK (Gemini Flash) → 데이터 수집 (저렴)
+#   SMART-A (Claude Haiku) + SMART-B (GPT 5.2) → 교차 검증 (중간)
+#   EXPERT (Claude Opus) → 매수/매도 최종 결정 (비쌈, 필요 시)
 
 tiers:
   quick:
     model: gemini/gemini-2.5-flash
+    fallback_model: gemini/gemini-3.0-flash
     purposes:
       - data_collection
+      - news_scraping
+      - normalization
       - monitoring_text
     timeout_sec: 30
     max_retries: 2
-  smart:
-    model: openai/gpt-4o
+  smart_a:
+    model: anthropic/claude-haiku-4-5-20250514
     purposes:
       - trade_analysis
-      - decision_making
+      - chart_analysis
+      - data_synthesis
+    timeout_sec: 30
+    max_retries: 2
+  smart_b:
+    model: openai/gpt-5.2
+    purposes:
+      - trade_analysis_verification
+      - pattern_recognition
+      - cross_check
     timeout_sec: 30
     max_retries: 2
   expert:
-    model: anthropic/claude-sonnet-4-20250514
+    model: anthropic/claude-opus-4-5-20250514
     purposes:
-      - edge_cases
+      - buy_sell_decision
+      - disagreement_resolution
       - high_uncertainty
-    timeout_sec: 30
+    timeout_sec: 60
     max_retries: 2
 
-default_tier: smart
+default_tier: smart_a
 
-# 라우팅 규칙: 용도별 티어 매핑 (decision_making은 절대 quick으로 폴백하지 않음)
+# 교차 검증 설정
+cross_verification:
+  enabled: true
+  # smart_a와 smart_b가 독립 분석 후 결과 비교
+  # 일치 → TradeIdea 확정
+  # 불일치 → expert 티어로 에스컬레이션
+  agreement_threshold: 0.8  # side + confidence가 이 이상 유사하면 일치로 판단
+  escalation_tier: expert
+
+# 라우팅 규칙: 용도별 티어 매핑
 routing:
   data_collection: quick
+  news_scraping: quick
+  normalization: quick
   monitoring_text: quick
-  trade_analysis: smart
-  decision_making: smart
-  edge_cases: expert
+  trade_analysis: smart_a
+  trade_analysis_verification: smart_b
+  chart_analysis: smart_a
+  pattern_recognition: smart_b
+  cross_check: smart_b
+  data_synthesis: smart_a
+  buy_sell_decision: expert
+  disagreement_resolution: expert
+  high_uncertainty: expert
