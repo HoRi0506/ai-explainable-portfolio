@@ -40,3 +40,14 @@ venv/
 *.log
 .logs/
 .cache/
+/data/
+
+# Storage (runtime data)
+storage/*.db
+storage/*.jsonl
+
+# Keep storage dir
+!storage/.gitkeep
+
+# Env
+.env

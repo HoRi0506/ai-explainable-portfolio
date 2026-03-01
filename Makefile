@@ -1,18 +1,15 @@
-.PHONY: setup test smoke graph ui
+.PHONY: setup test smoke lint
 
 setup:
-	uv venv --python=python3
-	. .venv/bin/activate && uv pip install -q pandas numpy streamlit yfinance httpx tenacity pydantic pytest
+	uv venv --python=python3.11
+	uv pip install -e ".[dev]"
 
 test:
 	uv run pytest -q
 
 smoke:
-	uv run python -c "import pandas,streamlit,yfinance,httpx,tenacity,pydantic; print('imports-ok')"
+	uv run python -c "from tools import yfinance_client; print('tools-ok')"
+	uv run python -c "import schemas, engine, adapters, agents; print('packages-ok')"
 
-graph:
-	uv run python -m app.cli --sectors AI --budget 1000000 | head -c 200
-
-ui:
-	STREAMLIT_BROWSER_GATHER_USAGE_STATS=false uv run streamlit run ui/app.py
-
+lint:
+	uv run mypy schemas/ engine/ adapters/ agents/ tools/
