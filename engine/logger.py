@@ -18,6 +18,7 @@ from typing import IO, Any
 
 from pydantic import BaseModel
 
+from config.secrets import redact_secrets
 
 class AuditLogger:
     """감사 로그 기록기.
@@ -88,6 +89,7 @@ class AuditLogger:
 
         now = datetime.now(timezone.utc)
         data = event.model_dump(mode="json")
+        data = redact_secrets(data)
 
         # trace_id 추출 (있으면)
         trace_id = str(data.get("trace_id", ""))
