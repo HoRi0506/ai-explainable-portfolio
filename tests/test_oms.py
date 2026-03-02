@@ -369,6 +369,38 @@ class TestQuery:
         assert open_order_id in open_ids
         assert terminal_order_id not in open_ids
 
+    def test_get_order_idempotency_key_returns_key(
+        self, oms: ExecutionOMS, sample_plan: ApprovedOrderPlan
+    ) -> None:
+        result = oms.submit_order(sample_plan)
+        order_id = str(result.trace_id)
+        key = oms.get_order_idempotency_key(order_id)
+        assert key == result.idempotency_key
+
+    def test_get_order_idempotency_key_returns_none_for_unknown(
+        self, oms: ExecutionOMS
+    ) -> None:
+        assert oms.get_order_idempotency_key(str(uuid4())) is None
+
+    def test_get_order_idempotency_key_handles_malformed_data(
+        self, db_path: Path
+    ) -> None:
+        """멱등성 키가 잘못된 형식이면 None을 반환한다."""
+        with ExecutionOMS(db_path=db_path) as local_oms:
+            plan = make_plan()
+            result = local_oms.submit_order(plan)
+            order_id = str(result.trace_id)
+
+            # Corrupt the idempotency_key in DB
+            local_oms._conn.execute(
+                "UPDATE orders SET idempotency_key = ? WHERE order_id = ?",
+                ("not-a-uuid", order_id),
+            )
+            local_oms._conn.commit()
+
+            key = local_oms.get_order_idempotency_key(order_id)
+            assert key is None
+
 
 class TestRecovery:
     """재시작 복구 테스트."""
