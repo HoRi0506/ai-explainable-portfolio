@@ -24,6 +24,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from engine.capability_token import CapabilityTokenManager
 from engine.logger import AuditLogger
 from engine.portfolio import PortfolioManager
 from schemas.models import ApprovedOrderPlan, Fill, OrderResult, OrderStatus
@@ -93,6 +94,7 @@ class ExecutionOMS:
         db_path: str | Path,
         portfolio: PortfolioManager | None = None,
         logger: AuditLogger | None = None,
+        token_manager: CapabilityTokenManager | None = None,
     ) -> None:
         """ExecutionOMS 초기화.
 
@@ -100,10 +102,12 @@ class ExecutionOMS:
             db_path: SQLite 파일 경로.
             portfolio: 체결 반영 대상 포트폴리오 관리자. None이면 포트폴리오 반영 생략.
             logger: 감사 로거. None이면 로그 기록 생략.
+            token_manager: Phase 1b capability token 관리자. None이면 검증 비활성화.
         """
         self._db_path = Path(db_path)
         self._portfolio = portfolio
         self._logger = logger
+        self._token_manager: CapabilityTokenManager | None = token_manager
         self._lock = threading.RLock()
 
         self._conn = sqlite3.connect(
@@ -134,6 +138,14 @@ class ExecutionOMS:
             raise ValueError(f"주문 수량은 양의 정수여야 합니다: {plan.order.qty}")
         if plan.order.price is not None and plan.order.price <= 0:
             raise ValueError(f"주문 가격은 양수여야 합니다: {plan.order.price}")
+
+        # Phase 1b: HMAC capability token 검증
+        if self._token_manager is not None:
+            if plan.capability_token is None:
+                raise ValueError("capability_token 필수 (HMAC 검증 모드)")
+            verify_result = self._token_manager.verify(plan.capability_token, plan)
+            if not verify_result.valid:
+                raise ValueError(f"capability_token 검증 실패: {verify_result.reason}")
 
         with self._lock:
             existing = self._build_result(order_id)
@@ -486,6 +498,28 @@ class ExecutionOMS:
                 if result is not None:
                     results.append(result)
             return results
+
+    def get_order_idempotency_key(self, order_id: str) -> UUID | None:
+        """주문의 멱등성 키를 반환한다.
+
+        Args:
+            order_id: 내부 주문 ID.
+
+        Returns:
+            UUID 멱등성 키 또는 None(주문 미존재 또는 키 파싱 실패 시).
+        """
+        self._validate_non_empty(order_id, "order_id")
+        with self._lock:
+            row = self._get_order_row(order_id)
+            if row is None:
+                return None
+            raw = row["idempotency_key"]
+            if not raw:
+                return None
+            try:
+                return UUID(str(raw))
+            except (ValueError, AttributeError):
+                return None
 
     def recover_open_orders(self) -> list[OrderResult]:
         """재시작 복구용 미종결 주문 목록 조회.

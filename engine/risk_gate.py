@@ -14,6 +14,7 @@ Phase 1a: config flag 기반. Phase 1b에서 HMAC capability token으로 강화 
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
+from engine.capability_token import CapabilityTokenManager
 from schemas.models import (
     ApprovedOrderPlan,
     BrokerOrder,
@@ -41,16 +42,20 @@ class RiskGate:
     """
 
     def __init__(
-        self, max_data_age_seconds: int = DEFAULT_MAX_DATA_AGE_SECONDS
+        self,
+        max_data_age_seconds: int = DEFAULT_MAX_DATA_AGE_SECONDS,
+        token_manager: CapabilityTokenManager | None = None,
     ) -> None:
         """초기화.
 
         Args:
             max_data_age_seconds: 데이터 최대 허용 나이 (초). 기본 1800초 (30분).
+            token_manager: Phase 1b capability token 관리자. None이면 비활성화.
         """
         self._daily_order_count: int = 0
         self._last_reset_date: date | None = None
         self._max_data_age_seconds: int = max_data_age_seconds
+        self._token_manager: CapabilityTokenManager | None = token_manager
 
     def evaluate(
         self,
@@ -125,12 +130,25 @@ class RiskGate:
 
         # 승인
         self._daily_order_count += 1
+        capability_token = None
+        if self._token_manager is not None:
+            # 왜(why): token 서명 시 plan 필드가 최종 확정 상태여야 하므로,
+            # token 없이 임시 plan을 만들어 서명한 뒤 최종 plan에 포함한다.
+            unsigned_plan = ApprovedOrderPlan(
+                trace_id=idea.trace_id,
+                mode=mode,
+                sizing=sizing,
+                risk_checks=checks,
+                order=order,
+            )
+            capability_token = self._token_manager.generate(unsigned_plan)
         return ApprovedOrderPlan(
             trace_id=idea.trace_id,
             mode=mode,
             sizing=sizing,
             risk_checks=checks,
             order=order,
+            capability_token=capability_token,
         )
 
     def _check_trading_mode(self, mode: TradingMode) -> RiskCheckResult:

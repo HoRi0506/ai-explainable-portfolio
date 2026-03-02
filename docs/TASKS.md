@@ -300,26 +300,27 @@ trader-desktop/
 
 #### Milestone C: 기본 파이프라인 & 첫 페이퍼 거래 (Week 3)
 
-- **C-3 [TODO] KIS 어댑터 (adapters/kis_adapter.py)**
+- **C-3 [DONE] KIS 어댑터 (adapters/kis_adapter.py)**
   - 수행: KIS 모의투자 API 직접 연동, OAuth 2.0 access_token 발급 + 자동 갱신, KRX 거래시간 검증
   - 수용기준: 모의투자 환경 주문 제출 → 체결 확인
   - 검증: `pytest tests/test_kis_adapter.py`
 
-- **C-5 [TODO] Analyst Agent (agents/analyst_agent.py)**
+- **C-5 [DONE] Analyst Agent (agents/analyst_agent.py)**
   - 수행: LLM 호출 → TradeIdea[], 구조화 출력, Pydantic 검증, 프롬프트 인젝션 방지
   - 모델 티어: 데이터 수집 단계 Gemini Flash (QUICK Tier), 분석/의사결정 GPT-4o/Claude Sonnet (SMART Tier)
   - 수용기준: 유효 TradeIdea 생성 + 무효 응답 graceful fallback
   - 검증: `pytest tests/test_analyst_agent.py`
 
-- **C-4 [TODO] 에이전트 파이프라인 (agents/pipeline.py)**
+- **C-4 [DONE] 에이전트 파이프라인 (agents/pipeline.py)**
   - 수행: Scheduler → Data Hub → Analyst Agent → Risk Gate → OMS → Log, EOD 배치 기본
   - 운영 시간: 데이터 수집 08:30-15:00 KST (하루 최대 2회), 매매 10:00-15:00 KST
   - 수용기준: 더미 데이터 E2E 완주, 파이프라인 60초 이내
-  - 검증: `pytest tests/test_pipeline_e2e.py`
+  - 검증: `pytest tests/test_pipeline.py`
 
-- **C-4a [TODO] 첫 페이퍼 거래 실행**
+- **C-4a [BLOCKED] 첫 페이퍼 거래 실행**
   - 수행: 실제 yfinance → Analyst → Risk Gate → KIS 모의투자 → 로그 확인
   - 수용기준: 최소 1건 KR 모의투자 주문 체결 + 로그 기록 확인
+  - 상태: KIS API 자격증명(APP_KEY, APP_SECRET, ACCOUNT_NO) 필요. 자격증명 설정 후 수동 실행.
 
 ---
 
@@ -328,30 +329,30 @@ trader-desktop/
 
 #### Milestone D: 강화 (Week 4)
 
-- **B-4b [TODO] OMS 멱등성 강화**
+- **B-4b [DONE] OMS 멱등성 강화**
   - 수행: 멱등성 키, 브로커 client_order_id 활용, 글로벌 backoff + circuit breaker 추가
   - 수용기준: 중복 방지, 레이트리밋 시 재시도 폭주 없음
   - 검증: `pytest tests/test_oms.py` (멱등성/circuit breaker 케이스 추가)
 
-- **B-5 [TODO] 재조정 엔진 (engine/reconciliation.py)**
+- **B-5 [DONE] 재조정 엔진 (engine/reconciliation.py)**
   - 수행: 시작 시 + 5분 주기 재조정, 범위: 포지션 + 현금/매수력 + 미체결 주문 + 체결 커서, 불일치 → 거래 동결
   - 수용기준: 의도적 불일치 시 자동 정지
   - 검증: `pytest tests/test_reconciliation.py`
 
-- **C-6 [TODO] Monitor Agent (agents/monitor_agent.py)**
+- **C-6 [DONE] Monitor Agent (agents/monitor_agent.py)**
   - 수행: 포지션 감시, 급등락/피드 중단 감지, 자동 정지
   - 수용기준: 급락 시나리오 자동 정지 발동
   - 검증: `pytest tests/test_monitor_agent.py`
 
 #### Milestone E: 보안 강화 (Week 5)
 
-- **B-6 [TODO] Kill Switch — Level 1 (engine/kill_switch.py)**
+- **B-6 [DONE] Kill Switch — Level 1 (engine/kill_switch.py)**
   - 수행: Level 1(PAUSE = 신호 중단), crash-safe disarmed 기본값
   - 수용기준: PAUSE 시 신규 신호 완전 차단
   - 검증: `pytest tests/test_kill_switch.py`
   - ⚠️ Week 6에서 Level 2/3 + 워치독 추가
 
-- **B-3b [TODO] Risk Gate HMAC capability token 강화**
+- **B-3b [DONE] Risk Gate HMAC capability token 강화**
   - 수행: HMAC 서명 capability_token (ApprovedOrderPlan 정준 해시 바인딩, trace_id+order+sizing+만료+nonce), 1회 사용 후 무효화, OMS HMAC token 검증+해시 매칭
   - 수용기준: 위조 token 거부, 만료 거부, payload 변조 거부, 이중 사용 거부
   - 검증: `pytest tests/test_risk_gate.py` (HMAC 케이스 추가)
