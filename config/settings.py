@@ -39,6 +39,21 @@ class AppConfig(BaseModel):
     pipeline_timeout_sec: int = Field(default=60, ge=1)
     data_stale_minutes: int = Field(default=30, ge=1)
 
+    # 재조정 설정
+    reconciliation_interval_seconds: int = Field(default=300, ge=1)
+    """재조정 주기 (초). 기본 5분."""
+    reconciliation_cash_tolerance: float = Field(default=100.0, ge=0.0)
+    """현금 불일치 허용 오차 (KRW)."""
+    reconciliation_fill_check_mode: str = Field(default="warn")
+    """체결 확인 모드: disabled | warn | freeze."""
+
+    # 감시 에이전트 설정
+    monitor_price_change_threshold_pct: float = Field(default=5.0, gt=0.0)
+    """급변 감지 임계값 (%). 이 비율 이상 변동 시 알림."""
+    monitor_price_change_window_minutes: int = Field(default=30, ge=1)
+    """급변 감지 시간 창 (분). 이 기간 내 변동 추적."""
+    monitor_stale_data_minutes: int = Field(default=30, ge=1)
+    """데이터 부실 판단 기준 (분). 이 시간 이상 오래된 데이터는 부실로 판단."""
 
 class RiskPolicyConfig(BaseModel):
     """리스크 정책 설정 (risk_policy.yaml)."""
@@ -133,6 +148,27 @@ def load_settings(config_dir: str | Path = "config") -> Settings:
     config_path = Path(config_dir)
 
     app_data = load_yaml(config_path / "app.yaml")
+
+    # 왜(why): YAML은 중첩 reconciliation 섹션을 사용하지만 AppConfig는 flat 필드 사용
+    recon = app_data.pop("reconciliation", {})
+    if isinstance(recon, dict):
+        if "interval_seconds" in recon:
+            app_data["reconciliation_interval_seconds"] = recon["interval_seconds"]
+        if "cash_tolerance_krw" in recon:
+            app_data["reconciliation_cash_tolerance"] = recon["cash_tolerance_krw"]
+        if "fill_check_mode" in recon:
+            app_data["reconciliation_fill_check_mode"] = recon["fill_check_mode"]
+
+    # 왜(why): YAML은 중첩 monitor 섬션을 사용하지만 AppConfig는 flat 필드 사용
+    monitor = app_data.pop("monitor", {})
+    if isinstance(monitor, dict):
+        if "price_change_threshold_pct" in monitor:
+            app_data["monitor_price_change_threshold_pct"] = monitor["price_change_threshold_pct"]
+        if "price_change_window_minutes" in monitor:
+            app_data["monitor_price_change_window_minutes"] = monitor["price_change_window_minutes"]
+        if "stale_data_minutes" in monitor:
+            app_data["monitor_stale_data_minutes"] = monitor["stale_data_minutes"]
+
     risk_data = load_yaml(config_path / "risk_policy.yaml")
     strategy_data = load_yaml(config_path / "strategy.yaml")
     litellm_data = load_yaml(config_path / "litellm_config.yaml")

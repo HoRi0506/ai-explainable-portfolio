@@ -19,3 +19,15 @@ log_path: storage/logs.jsonl
 # 파이프라인
 pipeline_timeout_sec: 60
 data_stale_minutes: 30  # 이 시간 이상 지난 데이터 → 거부
+
+# 재조정
+reconciliation:
+  interval_seconds: 300       # 5분 주기
+  cash_tolerance_krw: 100     # 현금 허용 오차 (KRW)
+  fill_check_mode: warn       # disabled | warn | freeze
+
+# 감시 에이전트
+monitor:
+  price_change_threshold_pct: 5.0    # 급변 감지 임계값 (%)
+  price_change_window_minutes: 30    # 급변 감지 시간 창 (분)
+  stale_data_minutes: 30             # 데이터 부실 판단 기준 (분)

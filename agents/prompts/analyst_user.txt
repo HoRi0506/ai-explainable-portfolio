@@ -1,0 +1,9 @@
+Analyze the following market data and generate trade recommendations.
+
+## Market Data
+{snapshot_data}
+
+## Current Date/Time
+{current_time}
+
+Respond with JSON only. No explanation outside the JSON.
