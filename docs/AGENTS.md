@@ -12,14 +12,14 @@ Phase 1 MVP: 2 AI 에이전트 + 규칙 기반 모듈. Phase 3에서 필요 시 
 
 | Tier | 모델 | CLI 도구 | 용도 | 예상 비용 |
 |------|------|----------|------|----------|
-| **QUICK** | Gemini 2.5/3.0 Flash | Antigravity (Gemini CLI) | 데이터 수집, 뉴스 정규화, 모니터링 텍스트 | $0.10~0.40/1M tokens |
+| **QUICK** | GPT-4o-mini | Codex CLI | 데이터 수집, 뉴스 정규화, 모니터링 텍스트 | $0.15~0.60/1M tokens |
 | **SMART-A** | Claude Haiku 4.5 | Claude Code | 분석 요약, 차트 패턴 인식, 데이터 정리 | $0.25~1.00/1M tokens |
 | **SMART-B** | GPT 5.2 | Codex CLI | 독립 분석, 교차 검증 대상, 패턴 검증 | $2.00~3.00/1M tokens |
-| **EXPERT** | Claude Opus 4.5 | Antigravity (Gemini CLI) | **매수/매도 최종 결정**, 고불확실성 판단 | $15.00/1M tokens |
+| **EXPERT** | Claude Opus 4.5 | Claude Code | **매수/매도 최종 결정**, 고불확실성 판단 | $15.00/1M tokens |
 
 ### 교차 검증 흐름
 ```
-1. QUICK (Gemini Flash) → 데이터 수집 + DB 저장
+1. QUICK (GPT-4o-mini) → 데이터 수집 + DB 저장
 2. SMART-A (Haiku) → 독립 분석 → TradeIdea 후보 A
 3. SMART-B (GPT 5.2) → 독립 분석 → TradeIdea 후보 B
 4. 교차 비교:
@@ -29,9 +29,8 @@ Phase 1 MVP: 2 AI 에이전트 + 규칙 기반 모듈. Phase 3에서 필요 시 
 ```
 
 ### CLI 도구별 역할
-- **Antigravity (Gemini CLI)**: Gemini 모델 + Claude 모델 실행. 데이터 수집(QUICK) + 최종 결정(EXPERT) 담당.
-- **Claude Code**: Claude Haiku 실행. 분석/정리(SMART-A) 담당. 폴백 역할.
-- **Codex CLI**: GPT 모델 실행. 교차 검증(SMART-B) 담당. 기존 유지.
+- **Claude Code**: Claude Haiku (SMART-A) + Claude Opus (EXPERT) 실행.
+- **Codex CLI**: GPT-4o-mini (QUICK) + GPT 5.2 (SMART-B) 실행.
 
 ---
 
@@ -41,7 +40,7 @@ Phase 1 MVP: 2 AI 에이전트 + 규칙 기반 모듈. Phase 3에서 필요 시 
 - **Output**: `TradeIdea[]` (symbol, side, confidence, horizon, entry, exit, thesis, constraints)
 - **Tools**: `llm_client` (교차 검증 라우팅 via LiteLLM), `yfinance_client`, `firecrawl_client` (뉴스)
 - **모델 사용 흐름**:
-  1. 데이터 수집: QUICK (Gemini Flash) — 뉴스 크롤링, 시장 데이터 정규화, 하루 최대 2회
+  1. 데이터 수집: QUICK (GPT-4o-mini) — 뉴스 크롤링, 시장 데이터 정규화, 하루 최대 2회
   2. 분석 A: SMART-A (Claude Haiku) — 수집 데이터 기반 TradeIdea 후보 생성
   3. 분석 B: SMART-B (GPT 5.2) — 동일 데이터로 독립 TradeIdea 후보 생성
   4. 교차 검증: 두 결과 비교 (일치 → 확정, 불일치 → EXPERT 위임)
@@ -61,8 +60,8 @@ Phase 1 MVP: 2 AI 에이전트 + 규칙 기반 모듈. Phase 3에서 필요 시 
 - **역할**: 보유 포지션 실시간 감시 + 이상 감지 + 자동 정지 트리거
 - **Input**: `Portfolio` + `MarketSnapshot` (현재 포지션 + 최신 시세)
 - **Output**: `Alert` (severity, message, action: HOLD|REDUCE|STOP)
-- **Tools**: `yfinance_client` (가격 모니터링), `llm_client` (Gemini Flash — 이상 분석 텍스트, 선택적)
-- **모델 사용**: QUICK (Gemini Flash)만 — 이상 감지 텍스트 생성 시에만 (선택적)
+- **Tools**: `yfinance_client` (가격 모니터링), `llm_client` (GPT-4o-mini — 이상 분석 텍스트, 선택적)
+- **모델 사용**: QUICK (GPT-4o-mini)만 — 이상 감지 텍스트 생성 시에만 (선택적)
 - **Rules**:
   - 급등락 감지: 단일 종목 ±{threshold}% 이내 {minutes}분 → Alert
   - 데이터 피드 중단 감지: {stale_minutes}분 이상 갱신 없음 → AutoStop
@@ -108,7 +107,7 @@ Phase 1 MVP: 2 AI 에이전트 + 규칙 기반 모듈. Phase 3에서 필요 시 
 ```
 [Scheduler] 데이터 수집 트리거 (08:30~15:00, 하루 최대 2회)
     ↓
-[Data Hub — QUICK: Gemini Flash] → DB 저장
+[Data Hub — QUICK: GPT-4o-mini] → DB 저장
     ↓ (수집 완료 이벤트)
 [Analyst Agent]
     ├─ SMART-A (Haiku): 독립 분석 → TradeIdea 후보 A

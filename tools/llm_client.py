@@ -1,4 +1,4 @@
-"""LLM client abstraction (OpenAI/Gemini) with pluggable auth."""
+"""LLM client abstraction (OpenAI/Anthropic) with pluggable auth."""
 
 from __future__ import annotations
 
@@ -36,13 +36,13 @@ def load_llm_config(provider: str, model: str, api_key: str | None = None) -> LL
         return LLMConfig(
             provider=provider, model=model, auth=AuthConfig(api_key=key), base_url=base
         )
-    if provider == "gemini":
+    if provider == "anthropic":
         key = (
             api_key
-            or os.getenv("GEMINI_API_KEY")
-            or _load_key_store().get("gemini_api_key")
+            or os.getenv("ANTHROPIC_API_KEY")
+            or _load_key_store().get("anthropic_api_key")
         )
-        base = os.getenv("GEMINI_BASE_URL")
+        base = os.getenv("ANTHROPIC_BASE_URL")
         return LLMConfig(
             provider=provider, model=model, auth=AuthConfig(api_key=key), base_url=base
         )
@@ -58,10 +58,8 @@ class LLMClient:
     ) -> Dict[str, Any]:
         if self.config.provider == "openai":
             return self._openai_chat(system_prompt, user_prompt, json_mode=json_mode)
-        if self.config.provider == "gemini":
-            return self._gemini_generate(
-                system_prompt, user_prompt, json_mode=json_mode
-            )
+        if self.config.provider == "anthropic":
+            return self._anthropic_chat(system_prompt, user_prompt, json_mode=json_mode)
         raise ValueError(f"Unsupported provider: {self.config.provider}")
 
     def _openai_chat(
@@ -97,36 +95,39 @@ class LLMClient:
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         return _parse_json_or_text(content)
 
-    def _gemini_generate(
+    def _anthropic_chat(
         self, system_prompt: str, user_prompt: str, json_mode: bool
     ) -> Dict[str, Any]:
         api_key = self.config.auth.api_key
         if not api_key:
-            return {"error": "GEMINI_API_KEY is missing"}
-        base_url = self.config.base_url or "https://generativelanguage.googleapis.com"
+            return {"error": "ANTHROPIC_API_KEY is missing"}
+        base_url = self.config.base_url or "https://api.anthropic.com"
         payload: Dict[str, Any] = {
-            "systemInstruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "model": self.config.model,
+            "max_tokens": 4096,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_prompt}],
         }
-        if json_mode:
-            payload["generationConfig"] = {"response_mime_type": "application/json"}
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+        }
         try:
             with httpx.Client(timeout=60.0) as client:
                 resp = client.post(
-                    f"{base_url}/v1beta/models/{self.config.model}:generateContent",
-                    params={"key": api_key},
-                    json=payload,
+                    f"{base_url}/v1/messages", json=payload, headers=headers
                 )
                 resp.raise_for_status()
                 data = resp.json()
         except Exception as exc:
-            log.warning(f"Gemini 호출 실패: {exc}")
+            log.warning(f"Anthropic 호출 실패: {exc}")
             return {"error": str(exc)}
-        candidates = data.get("candidates", [])
+        content_blocks = data.get("content", [])
         text = ""
-        if candidates:
-            parts = candidates[0].get("content", {}).get("parts", [])
-            text = "".join(p.get("text", "") for p in parts)
+        for block in content_blocks:
+            if block.get("type") == "text":
+                text += block.get("text", "")
         return _parse_json_or_text(text)
 
 

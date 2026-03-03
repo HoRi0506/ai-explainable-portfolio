@@ -2,14 +2,14 @@
 # Phase 1a: 직접 API 호출. Phase 2+: LiteLLM Proxy 전환 예정
 #
 # 아키텍처:
-#   QUICK (Gemini Flash) → 데이터 수집 (저렴)
+#   QUICK (GPT-4o-mini) → 데이터 수집 (저렴)
 #   SMART-A (Claude Haiku) + SMART-B (GPT 5.2) → 교차 검증 (중간)
 #   EXPERT (Claude Opus) → 매수/매도 최종 결정 (비쌈, 필요 시)
 
 tiers:
   quick:
-    model: gemini/gemini-2.5-flash
-    fallback_model: gemini/gemini-3.0-flash
+    model: openai/gpt-4o-mini
+    fallback_model: openai/gpt-4o
     purposes:
       - data_collection
       - news_scraping

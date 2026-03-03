@@ -254,7 +254,7 @@ class TestLiteLLMConfig:
     def test_litellm_config_with_tiers(self):
         """티어 포함."""
         tiers = {
-            "quick": LLMTier(model="gemini-flash", purposes=["data_collection"]),
+            "quick": LLMTier(model="gpt-4o-mini", purposes=["data_collection"]),
             "smart": LLMTier(model="gpt-4", purposes=["analysis"]),
         }
         config = LiteLLMConfig(tiers=tiers, default_tier="smart")
@@ -358,7 +358,6 @@ class TestRiskPolicy:
         }
         with pytest.raises(ValidationError):
             RiskPolicyConfig(**data)
-
 
 
 class TestSettings:
@@ -504,7 +503,7 @@ active_strategy: ma_crossover
             """
 tiers:
   quick:
-    model: gemini-flash
+    model: gpt-4o-mini
     purposes:
       - data_collection
     timeout_sec: 30
@@ -538,7 +537,6 @@ routing:
 
         with pytest.raises(ValidationError):
             load_settings(tmp_path)
-
 
     def test_load_settings_roundtrip(self):
         """Settings 직렬화/역직렬화."""
@@ -604,7 +602,7 @@ class TestLiteLLMValues:
         """quick 티어 검증."""
         settings = load_settings("config")
         quick = settings.litellm.tiers["quick"]
-        assert quick.model == "gemini/gemini-2.5-flash"
+        assert quick.model == "openai/gpt-4o-mini"
         assert "data_collection" in quick.purposes
         assert "monitoring_text" in quick.purposes
         assert quick.timeout_sec == 30

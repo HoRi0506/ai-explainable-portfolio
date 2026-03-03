@@ -15,7 +15,7 @@
 6. **LLM 실패 시 기본 행동**: HOLD (신규 진입 금지, 기존 손절만 유지)
 7. **텍스트 격리 규칙**: AI 생성 텍스트(thesis, news_risk)는 의사결정에 영향 없음. 수치/열거형 필드만 Risk Gate/OMS 구동
 8. **단계적 보안 강화**: Phase 1a는 단순한 config flag 기반, Phase 1b+에서 HMAC capability token으로 강화
-9. **계층형 모델 전략**: 데이터 수집/모니터링은 저비용 모델(Gemini Flash), 의사결정은 고비용 모델(GPT-4o/Claude Sonnet) 사용
+9. **계층형 모델 전략**: 데이터 수집/모니터링은 저비용 모델(GPT-4o-mini), 의사결정은 고비용 모델(GPT-4o/Claude Sonnet) 사용
 10. **OAuth 인증 통합**: LiteLLM Proxy + Virtual Keys로 에이전트별 인증/예산/모델 접근 제어
 11. **데이터 수집 최소화**: 하루 최대 2회 수집 → DB 저장 → 재활용. 매번 API 호출하지 않음
 
@@ -38,7 +38,7 @@
 | 구분 | 선택 | 근거 |
 |------|------|------|
 | 언어 | Python 3.11+ | 기존 코드 재활용, 데이터 생태계 |
-| LLM | GPT-4o / Claude Sonnet (의사결정, via LiteLLM) + Gemini 2.5 Flash / 3.0 Flash (데이터 수집/모니터링, via LiteLLM) | 계층형 모델 전략, 비용 최적화 |
+| LLM | GPT-4o / Claude Sonnet (의사결정, via LiteLLM) + GPT-4o-mini (데이터 수집/모니터링, via LiteLLM) | 계층형 모델 전략, 비용 최적화 |
 | LLM Gateway | LiteLLM Proxy | 에이전트별 OAuth 인증, Virtual Keys, 예산 제한, 모델 접근 제어 |
 | 오케스트레이션 | 직접 구현 (asyncio + 함수 파이프라인) | 에이전트 2개 수준에서 프레임워크 불필요 |
 | UI (Phase 2) | Streamlit | 기존 경험, 빠른 프로토타입 |
@@ -122,8 +122,8 @@ trader-desktop/
 
 | 에이전트 | 역할 | 입력 | 출력 | Tools |
 |---------|------|------|------|-------|
-| **Analyst Agent** | 데이터 분석 + 매매 아이디어 생성 | MarketSnapshot[] | TradeIdea[] | yfinance_client, firecrawl_client, llm_client, **Gemini Flash (데이터 수집), GPT-4o/Claude Sonnet (분석/의사결정)** |
-| **Monitor Agent** | 포지션 감시 + 이상 감지 + 자동 정지 | Portfolio + MarketSnapshot | Alert / AutoStop | yfinance_client, **규칙 기반 주력 (LLM 불필요), 이상 분석 시 Gemini Flash (로그용)** |
+| **Analyst Agent** | 데이터 분석 + 매매 아이디어 생성 | MarketSnapshot[] | TradeIdea[] | yfinance_client, firecrawl_client, llm_client, **GPT-4o-mini (데이터 수집), GPT-4o/Claude Sonnet (분석/의사결정)** |
+| **Monitor Agent** | 포지션 감시 + 이상 감지 + 자동 정지 | Portfolio + MarketSnapshot | Alert / AutoStop | yfinance_client, **규칙 기반 주력 (LLM 불필요), 이상 분석 시 GPT-4o-mini (로그용)** |
 
 - Risk Gate = **규칙 기반 엔진 모듈** (AI 불필요)
 - Execution = **함수 호출** (에이전트 불필요)
@@ -171,12 +171,12 @@ trader-desktop/
 
 | 활동 | 시간 | 빈도 | 사용 모델 | CLI 도구 |
 |------|------|------|----------|----------|
-| 데이터 수집 (뉴스, 시장 데이터) | 08:30 ~ 15:00 | 하루 최대 2회 (장전 + 장중) | Gemini 2.5/3.0 Flash | Antigravity |
+| 데이터 수집 (뉴스, 시장 데이터) | 08:30 ~ 15:00 | 하루 최대 2회 (장전 + 장중) | GPT-4o-mini | Codex CLI |
 | 분석 A (요약/차트/정리) | 10:00 ~ 15:00 | 수집 데이터 기반 | Claude Haiku 4.5 | Claude Code |
 | 분석 B (교차 검증) | 10:00 ~ 15:00 | 분석 A와 병렬 | GPT 5.2 | Codex CLI |
-| 매수/매도 최종 결정 | 10:00 ~ 15:00 | 교차 검증 불일치 시 | Claude Opus 4.5 | Antigravity |
+| 매수/매도 최종 결정 | 10:00 ~ 15:00 | 교차 검증 불일치 시 | Claude Opus 4.5 | Claude Code |
 | 포지션 모니터링 | 보유 중 수시 | 규칙 기반 (LLM 불필요) | — | — |
-| 이상 감지 텍스트 생성 | 이상 발생 시 | 선택적 | Gemini Flash | Antigravity |
+| 이상 감지 텍스트 생성 | 이상 발생 시 | 선택적 | GPT-4o-mini | Codex CLI |
 
 ### 데이터 수집 → 교차 검증 → 결정 흐름
 
@@ -185,7 +185,7 @@ trader-desktop/
 
 [Scheduler] 데이터 수집 트리거 (08:30~15:00, 하루 최대 2회)
     ↓
-[QUICK: Gemini Flash] 뉴스 + 시장 데이터 수집 → DB 저장
+[QUICK: GPT-4o-mini] 뉴스 + 시장 데이터 수집 → DB 저장
     ↓ (수집 완료 이벤트)
 [SMART-A: Haiku] + [SMART-B: GPT 5.2] 병렬 독립 분석
     ↓
@@ -200,10 +200,10 @@ trader-desktop/
 
 | Tier | 모델 | CLI 도구 | 용도 | 예상 비용 |
 |------|------|----------|------|----------|
-| QUICK | Gemini 2.5/3.0 Flash | Antigravity | 데이터 수집, 정규화, 분류, 모니터링 텍스트 | $0.10~0.40/1M tokens |
+| QUICK | GPT-4o-mini | Codex CLI | 데이터 수집, 정규화, 분류, 모니터링 텍스트 | $0.15~0.60/1M tokens |
 | SMART-A | Claude Haiku 4.5 | Claude Code | 분석 요약, 차트/패턴 인식, 데이터 정리 | $0.25~1.00/1M tokens |
 | SMART-B | GPT 5.2 | Codex CLI | 독립 분석, 교차 검증, 패턴 검증 | $2.00~3.00/1M tokens |
-| EXPERT | Claude Opus 4.5 | Antigravity | **매수/매도 최종 결정**, 불일치 해소, 고불확실성 | $15.00/1M tokens |
+| EXPERT | Claude Opus 4.5 | Claude Code | **매수/매도 최종 결정**, 불일치 해소, 고불확실성 | $15.00/1M tokens |
 
 - Phase 1: Static Routing (config에서 에이전트별 모델 고정 + 교차 검증 로직)
 - Phase 2+: Cascade Pattern (SMART 교차 검증 → 불일치 시 자동 EXPERT 에스컬레이션)
@@ -212,9 +212,8 @@ trader-desktop/
 
 | CLI 도구 | 제공 모델 | 역할 |
 |----------|----------|------|
-| **Antigravity** (Gemini CLI) | Gemini Flash, Claude Opus | 데이터 수집(QUICK) + 최종 결정(EXPERT) |
-| **Claude Code** | Claude Haiku | 분석/정리(SMART-A). 폴백 역할 |
-| **Codex CLI** | GPT 5.2 | 교차 검증(SMART-B) |
+| **Claude Code** | Claude Haiku, Claude Opus | 분석/정리(SMART-A) + 최종 결정(EXPERT) |
+| **Codex CLI** | GPT-4o-mini, GPT 5.2 | 데이터 수집(QUICK) + 교차 검증(SMART-B) |
 
 ### LiteLLM Proxy 구성
 
@@ -307,7 +306,7 @@ trader-desktop/
 
 - **C-5 [DONE] Analyst Agent (agents/analyst_agent.py)**
   - 수행: LLM 호출 → TradeIdea[], 구조화 출력, Pydantic 검증, 프롬프트 인젝션 방지
-  - 모델 티어: 데이터 수집 단계 Gemini Flash (QUICK Tier), 분석/의사결정 GPT-4o/Claude Sonnet (SMART Tier)
+  - 모델 티어: 데이터 수집 단계 GPT-4o-mini (QUICK Tier), 분석/의사결정 GPT-4o/Claude Sonnet (SMART Tier)
   - 수용기준: 유효 TradeIdea 생성 + 무효 응답 graceful fallback
   - 검증: `pytest tests/test_analyst_agent.py`
 

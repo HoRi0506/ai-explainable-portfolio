@@ -8,14 +8,14 @@
 - **안전 우선**: Kill Switch 3단계, crash-safe 기본값(재시작 시 자동매매 OFF)
 - **점진적 전환**: 백테스트 → 페이퍼(4주+) → shadow → 소액 실거래
 - **LLM 장애 대응**: LLM 불가 시 HOLD (신규 진입 금지)
-- **비용 효율**: 데이터 수집은 저비용 모델(Gemini Flash, 하루 2회), 의사결정은 2개 모델 교차 검증(Haiku+GPT 5.2) + Opus 최종 결정
+- **비용 효율**: 데이터 수집은 저비용 모델(GPT-4o-mini, 하루 2회), 의사결정은 2개 모델 교차 검증(Haiku+GPT 5.2) + Opus 최종 결정
 - **교차 검증**: 2개 모델(Haiku+GPT 5.2) 독립 분석 후 비교. 불일치 시 Opus가 최종 결정
 - **OAuth 통합**: LiteLLM Proxy로 에이전트별 인증/예산/모델 접근 제어
 
 ## 아키텍처
 
 ```
-[Scheduler] → [Data Hub (QUICK: Gemini Flash)] → [Analyst Agent]
+[Scheduler] → [Data Hub (QUICK: GPT-4o-mini)] → [Analyst Agent]
                       ↓                              ├─ SMART-A (Haiku): 분석
                   [DB 저장]                           ├─ SMART-B (GPT 5.2): 교차 검증
                                                       └─ EXPERT (Opus): 최종 결정 (필요 시)
@@ -38,7 +38,7 @@
 |------|------|
 | 언어 | Python 3.11+ |
 | LLM (의사결정) | Claude Opus 4.5 (최종 결정) + Claude Haiku 4.5 + GPT 5.2 (교차 검증) (via LiteLLM) |
-| LLM (데이터 수집) | Gemini 2.5/3.0 Flash (via LiteLLM) |
+| LLM (데이터 수집) | GPT-4o-mini (via LiteLLM) |
 | LLM Gateway | LiteLLM Proxy (OAuth, Virtual Keys, 예산 제한) |
 | 브로커 (KR) | KIS 한국투자증권 (Phase 1) |
 | 브로커 (US) | Alpaca (Phase 2) |
@@ -73,7 +73,6 @@
    # .env 파일에 API 키 입력 (또는 keyring으로 OS 키체인에 저장)
    ```
    - `OPENAI_API_KEY` 또는 `ANTHROPIC_API_KEY`: LLM 의사결정 호출용
-   - `GOOGLE_API_KEY`: Gemini Flash 데이터 수집 호출용
    - `KIS_APP_KEY`, `KIS_APP_SECRET`: KIS 브로커 (모의투자)
    - `KIS_BASE_URL`: 모의투자 = `https://openapivts.koreainvestment.com:29443`, 실거래 = `https://openapi.koreainvestment.com:9443`
    - `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`: Alpaca 브로커 (Phase 2에서 필요)
