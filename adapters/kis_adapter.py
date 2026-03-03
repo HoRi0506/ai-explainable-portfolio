@@ -15,6 +15,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from adapters.base import BrokerAdapter
 from config.secrets import SecretManager
 from schemas.models import ApprovedOrderPlan, Side
 
@@ -36,7 +37,7 @@ def _is_retryable_http_status_error(exc: BaseException) -> bool:
     return exc.response.status_code in _RETRYABLE_STATUS_CODES
 
 
-class KISAdapter:
+class KISAdapter(BrokerAdapter):
     def __init__(
         self,
         secret_manager: SecretManager,
@@ -122,7 +123,7 @@ class KISAdapter:
             "raw": data,
         }
 
-    def get_order_status(self, odno: str | None = None) -> list[dict[str, Any]]:
+    def get_order_status(self, order_id: str | None = None) -> list[dict[str, Any]]:
         params = {
             "CANO": self._cano,
             "ACNT_PRDT_CD": self._acnt_prdt_cd,
@@ -142,7 +143,7 @@ class KISAdapter:
         result: list[dict[str, Any]] = []
         for row in rows:
             row_odno = str(row.get("odno", ""))
-            if odno and row_odno != odno:
+            if order_id and row_odno != order_id:
                 continue
             side_code = str(row.get("sll_buy_dvsn_cd", ""))
             result.append(
@@ -244,12 +245,19 @@ class KISAdapter:
             "raw": data,
         }
 
-    def cancel_order(self, odno: str, orgno: str) -> dict[str, Any]:
+    def get_positions(self) -> list[dict[str, Any]]:
+        balance = self.get_balance()
+        return balance.get("positions", [])
+
+    def cancel_order(
+        self, order_id: str, orgno: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        orgno_value = str(kwargs.get("orgno", orgno or ""))
         payload = {
             "CANO": self._cano,
             "ACNT_PRDT_CD": self._acnt_prdt_cd,
-            "KRX_FWDG_ORD_ORGNO": orgno,
-            "ORGN_ODNO": odno,
+            "KRX_FWDG_ORD_ORGNO": orgno_value,
+            "ORGN_ODNO": order_id,
             "ORD_DVSN": "00",
             "RVSE_CNCL_DVSN_CD": "02",
             "ORD_QTY": "0",

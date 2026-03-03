@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 from typing import Any
 
-from adapters.kis_adapter import KISAdapter
+from adapters.base import BrokerAdapter
 from engine.execution_oms import ExecutionOMS
 from engine.logger import AuditLogger
 from engine.portfolio import PortfolioManager
@@ -40,7 +40,7 @@ class ReconciliationEngine:
         self,
         portfolio: PortfolioManager,
         oms: ExecutionOMS,
-        broker: KISAdapter | None = None,
+        broker: BrokerAdapter | None = None,
         logger: AuditLogger | None = None,
         cash_tolerance: float = 100.0,
         reconcile_interval_seconds: int = 300,

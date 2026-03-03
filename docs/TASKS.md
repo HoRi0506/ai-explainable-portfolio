@@ -362,7 +362,7 @@ trader-desktop/
   - 수용기준: 로그 위변조 시 무결성 검증 실패, 전체 재작성 공격 탐지
   - 검증: `pytest tests/test_logger_integrity.py`
 
-- **C-1 [TODO] 추상 브로커 어댑터 (adapters/base.py)**
+- **C-1 [DONE] 추상 브로커 어댑터 (adapters/base.py)**
   - 수행: ABC(connect, get_balance, get_positions, submit_order, cancel_order, get_order_status, get_fills), 타임아웃+재시도
   - 검증: mypy 통과
 
